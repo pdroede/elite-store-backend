@@ -31,6 +31,68 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
+// Root route - API information page
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Elite Store API</title>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 40px; background: #f5f5f7; }
+            .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 20px rgba(0,0,0,0.1); }
+            h1 { color: #1d1d1f; margin-bottom: 20px; }
+            .status { display: inline-block; background: #34d399; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; margin-bottom: 20px; }
+            .endpoints { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .endpoint { margin: 10px 0; font-family: monospace; }
+            .method { color: #0066cc; font-weight: bold; }
+            a { color: #007AFF; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 Elite Store API</h1>
+            <div class="status">✅ API ONLINE - LIVE MODE</div>
+            
+            <p>Backend API para o Elite Store - Sistema de E-commerce</p>
+            
+            <div class="warning">
+                ⚠️ <strong>MODO LIVE ATIVO</strong> - Pagamentos reais estão sendo processados!
+            </div>
+            
+            <h3>📊 Painel Administrativo</h3>
+            <p><a href="/admin">🔗 Acessar Dashboard de Vendas</a></p>
+            
+            <h3>🔗 Endpoints Disponíveis</h3>
+            <div class="endpoints">
+                <div class="endpoint"><span class="method">GET</span> /api/health - Status da API</div>
+                <div class="endpoint"><span class="method">POST</span> /api/create-payment-intent - Criar pagamento</div>
+                <div class="endpoint"><span class="method">GET</span> /api/admin/orders - Listar pedidos</div>
+                <div class="endpoint"><span class="method">GET</span> /api/orders/:orderNumber - Buscar pedido</div>
+                <div class="endpoint"><span class="method">POST</span> /api/webhook - Webhook do Stripe</div>
+            </div>
+            
+            <h3>🌐 Frontend</h3>
+            <p>Site de vendas: <a href="https://elite-store-frontend.netlify.app" target="_blank">https://elite-store-frontend.netlify.app</a></p>
+            
+            <h3>💳 Status dos Pagamentos</h3>
+            <p>✅ Stripe conectado em modo LIVE</p>
+            <p>✅ Sistema de pedidos funcionando</p>
+            <p>✅ Dashboard administrativo ativo</p>
+            
+            <p style="margin-top: 40px; color: #6e6e73; font-size: 14px;">
+                Desenvolvido para Elite Store - Sistema completo de dropshipping
+            </p>
+        </div>
+    </body>
+    </html>
+  `);
+});
+
 // Product catalog - matches your frontend products
 const PRODUCTS = {
   1: {
