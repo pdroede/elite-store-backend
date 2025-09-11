@@ -1,7 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const stripe = require('stripe');
+const path = require('path');
 require('dotenv').config();
+
+// Import order management system
+const OrderManager = require('./orders');
 
 // Email service (optional - install with: npm install nodemailer)
 let nodemailer;
@@ -15,9 +19,17 @@ const app = express();
 // Use environment variables for security
 const stripeInstance = stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_...');
 
+// Initialize order manager
+const orderManager = new OrderManager();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve admin dashboard
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
 
 // Product catalog - matches your frontend products
 const PRODUCTS = {
@@ -76,6 +88,13 @@ app.post('/api/create-payment-intent', async (req, res) => {
       });
     }
 
+    // Validate customer info for live orders
+    if (!customerInfo || !customerInfo.email) {
+      return res.status(400).json({ 
+        error: 'Customer email is required' 
+      });
+    }
+
     // Calculate total from backend (security: never trust frontend totals)
     const calculation = validateAndCalculateCart(cartItems);
 
@@ -87,17 +106,24 @@ app.post('/api/create-payment-intent', async (req, res) => {
         enabled: true,
       },
       metadata: {
-        customerEmail: customerInfo?.email || '',
-        customerName: customerInfo?.name || '',
+        customerEmail: customerInfo.email || '',
+        customerName: customerInfo.name || '',
+        customerPhone: customerInfo.phone || '',
+        shippingAddress: JSON.stringify(customerInfo.address || {}),
         orderItems: JSON.stringify(calculation.items)
       }
     });
 
-    console.log(`Payment Intent created: ${paymentIntent.id} for €${calculation.total / 100}`);
+    // Create order record
+    const order = orderManager.createOrder(paymentIntent, customerInfo, calculation.items);
+
+    console.log(`💳 Payment Intent created: ${paymentIntent.id} for €${calculation.total / 100}`);
+    console.log(`📦 Order created: ${order.orderId}`);
 
     res.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      orderId: order.orderId,
       amount: calculation.total,
       currency: calculation.currency,
       items: calculation.items
@@ -126,16 +152,87 @@ app.post('/api/webhook', express.raw({type: 'application/json'}), (req, res) => 
   // Handle successful payment
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
-    console.log(`Payment succeeded: ${paymentIntent.id}`);
+    console.log(`✅ Payment succeeded: ${paymentIntent.id}`);
     
-    // Here you would:
-    // - Send confirmation email
-    // - Update inventory
-    // - Create order in database
-    // - etc.
+    // Update order status
+    const order = orderManager.updateOrderStatus(paymentIntent.id, 'paid');
+    
+    if (order) {
+      console.log(`📦 Order ${order.orderId} marked as paid`);
+      
+      // Here you could:
+      // - Send confirmation email to customer
+      // - Send notification to admin
+      // - Update inventory
+      // - Create shipping label
+      // - etc.
+    }
   }
 
   res.json({received: true});
+});
+
+// Admin endpoints for order management
+app.get('/api/admin/orders', (req, res) => {
+  try {
+    const stats = orderManager.getStats();
+    const orders = orderManager.getAllOrders();
+    
+    res.json({
+      stats,
+      orders
+    });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update order status
+app.post('/api/admin/orders/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, trackingNumber } = req.body;
+    
+    const order = orderManager.updateOrderStatus(id, status, trackingNumber);
+    
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    res.json(order);
+  } catch (error) {
+    console.error('Error updating order:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get specific order
+app.get('/api/orders/:orderNumber', (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const order = orderManager.getOrderByNumber(orderNumber);
+    
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    // Return public order info (hide sensitive data)
+    const publicOrder = {
+      orderId: order.orderId,
+      status: order.status,
+      items: order.items,
+      amount: order.amount,
+      currency: order.currency,
+      createdAt: order.createdAt,
+      trackingNumber: order.trackingNumber
+    };
+    
+    res.json(publicOrder);
+  } catch (error) {
+    console.error('Error fetching order:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Health check
