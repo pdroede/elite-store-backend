@@ -250,14 +250,19 @@
     </div>
 
     <script>
-        const API_BASE = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3001' 
-            : 'https://elite-store-backend.onrender.com';
+        const API_BASE = '';
 
         async function loadData() {
             try {
-                const response = await fetch(`${API_BASE}/api/admin/orders`);
+                console.log('Carregando dados do dashboard...');
+                const response = await fetch(`/api/admin/orders`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Dados carregados:', data);
                 
                 updateStats(data.stats);
                 renderOrders(data.orders);
