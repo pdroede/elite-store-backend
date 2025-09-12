@@ -214,8 +214,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 Elite Store Dashboard</h1>
-            <p>Gerencie seus pedidos e vendas</p>
+            <h1>📊 Elite Store Dashboard v2.0</h1>
+            <p>Gerencie seus pedidos e vendas - Atualizado</p>
         </div>
 
         <div class="stats-grid" id="statsGrid">
@@ -255,7 +255,20 @@
         async function loadData() {
             try {
                 console.log('Carregando dados do dashboard...');
-                const response = await fetch(`/api/admin/orders`);
+                
+                // Clear cache and add timestamp
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/admin/orders?_t=${timestamp}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response OK:', response.ok);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
