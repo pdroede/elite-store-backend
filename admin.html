@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Store - Admin Dashboard</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Elite Store - Admin Dashboard v3.0</title>
     <style>
         * {
             margin: 0;
@@ -254,21 +257,29 @@
 
         async function loadData() {
             try {
-                console.log('Carregando dados do dashboard...');
+                console.log('🔄 Carregando dados do dashboard...');
+                console.log('🌐 Base URL:', window.location.origin);
+                console.log('📍 Current URL:', window.location.href);
                 
                 // Clear cache and add timestamp
                 const timestamp = new Date().getTime();
-                const response = await fetch(`/api/admin/orders?_t=${timestamp}`, {
+                const apiUrl = `/api/admin/orders?_t=${timestamp}`;
+                console.log('🔗 API URL:', apiUrl);
+                
+                const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    }
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    },
+                    cache: 'no-store'
                 });
                 
-                console.log('Response status:', response.status);
-                console.log('Response OK:', response.ok);
+                console.log('📡 Response status:', response.status);
+                console.log('✅ Response OK:', response.ok);
+                console.log('🔗 Response URL:', response.url);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
